@@ -1,21 +1,5 @@
 "use client";
 
-/**
- * Custom theme provider — replaces next-themes to fix the React 19 warning:
- *   "Encountered a script tag while rendering React component."
- *
- * next-themes injects an inline <script> for SSR theme detection.
- * React 19 hoists ALL <script> tags found inside components to <head> and
- * generates the console warning. Moving to a "use client" boundary did not
- * fully suppress it because React 19 still processes the script tag.
- *
- * This custom implementation:
- *  - Reads the stored theme from localStorage on mount (useEffect)
- *  - Sets the "dark" or "light" class on <html> directly — no <script> tag
- *  - Persists theme changes to localStorage
- *  - Exports useTheme() so existing consumers keep the same interface
- */
-
 import {
   createContext,
   useContext,
@@ -34,28 +18,30 @@ interface ThemeContextValue {
 }
 
 const STORAGE_KEY = "newtonite-theme";
-const DEFAULT_THEME: Theme = "dark";
 
 const ThemeContext = createContext<ThemeContextValue>({
-  theme: DEFAULT_THEME,
+  theme: "dark",
   setTheme: () => {},
-  resolvedTheme: DEFAULT_THEME,
+  resolvedTheme: "dark",
 });
 
-/** Drop-in replacement for next-themes useTheme */
 export function useTheme(): ThemeContextValue {
   return useContext(ThemeContext);
 }
 
 export function Providers({ children }: { children: ReactNode }) {
-  // Start with default theme; useEffect will read localStorage on mount
-  const [theme, setThemeState] = useState<Theme>(DEFAULT_THEME);
+  const [theme, setThemeState] = useState<Theme>("dark");
 
-  // On mount: read persisted preference and apply class to <html>
   useEffect(() => {
-    const stored = (localStorage.getItem(STORAGE_KEY) as Theme | null) ?? DEFAULT_THEME;
-    applyTheme(stored);
-    setThemeState(stored);
+    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    // On first visit (no stored preference), respect the OS preference
+    const resolved: Theme = stored
+      ? stored
+      : window.matchMedia("(prefers-color-scheme: light)").matches
+      ? "light"
+      : "dark";
+    applyTheme(resolved);
+    setThemeState(resolved);
   }, []);
 
   const setTheme = (next: Theme) => {
@@ -73,7 +59,6 @@ export function Providers({ children }: { children: ReactNode }) {
 }
 
 function applyTheme(t: Theme) {
-  const root = document.documentElement;
-  root.classList.remove("light", "dark");
-  root.classList.add(t);
+  document.documentElement.classList.remove("light", "dark");
+  document.documentElement.classList.add(t);
 }
