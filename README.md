@@ -402,15 +402,6 @@ Required files present:
 
 ---
 
-## Known Limitations
-
-- No real-time WebSocket updates (15-second polling on item detail page)
-- Outbox worker handlers are log-only stubs — no actual email/webhook delivery
-- No file attachments (explicitly excluded per challenge brief)
-- No SSO/OAuth (seeded JWT auth only)
-- Outbox worker cannot run on Vercel serverless — use Railway or Fly.io for deployment
-
----
 
 ## License
 
