@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Build artifacts
+dist/
+build/
+
+# Environment (NEVER commit real secrets)
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Test artifacts
+coverage/
+.vitest-cache/
+
+# Docker volumes (created at runtime, not source)
+
+# AI assistant tool directories - not part of the project
+.claude/
+.windsurf/
+.agents/
+.kiro/
+skills-lock.json
+*.skill

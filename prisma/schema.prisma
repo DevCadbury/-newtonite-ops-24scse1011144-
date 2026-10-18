@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TeamRole {
+  VIEWER
+  MEMBER
+  LEAD
+  ADMIN
+}
+
+enum WorkItemStatus {
+  OPEN
+  IN_PROGRESS
+  AWAITING_APPROVAL
+  RESOLVED
+  CLOSED
+}
+
+enum WorkItemType {
+  INCIDENT
+  CUSTOMER_ISSUE
+  PAYMENT
+  COMPLIANCE
+  TASK
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ActivityEventType {
+  CREATED
+  STATUS_CHANGED
+  ASSIGNED
+  UNASSIGNED
+  PRIORITY_CHANGED
+  COMMENTED
+  DESCRIPTION_UPDATED
+  TITLE_UPDATED
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  memberships     Membership[]
+  assignedItems   WorkItem[]      @relation("AssignedItems")
+  createdItems    WorkItem[]      @relation("CreatedItems")
+  activityEvents  ActivityEvent[]
+  comments        Comment[]
+  idempotencyKeys IdempotencyKey[]
+
+  @@map("users")
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  memberships Membership[]
+  workItems   WorkItem[]
+
+  @@map("teams")
+}
+
+model Membership {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  teamId    String   @map("team_id")
+  role      TeamRole
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+  @@index([userId])
+  @@index([teamId])
+  @@map("memberships")
+}
+
+model WorkItem {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  type        WorkItemType
+  priority    Priority       @default(MEDIUM)
+  status      WorkItemStatus @default(OPEN)
+  version     Int            @default(1)
+  teamId      String         @map("team_id")
+  assigneeId  String?        @map("assignee_id")
+  createdById String         @map("created_by_id")
+  dueDate     DateTime?      @map("due_date")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  team      Team    @relation(fields: [teamId], references: [id])
+  assignee  User?   @relation("AssignedItems", fields: [assigneeId], references: [id])
+  createdBy User    @relation("CreatedItems", fields: [createdById], references: [id])
+
+  activityEvents ActivityEvent[]
+  comments       Comment[]
+  outboxJobs     OutboxJob[]
+
+  @@index([status, teamId])
+  @@index([assigneeId])
+  @@index([createdAt, id])
+  @@index([teamId, status, priority])
+  @@map("work_items")
+}
+
+model ActivityEvent {
+  id          String            @id @default(cuid())
+  workItemId  String            @map("work_item_id")
+  actorId     String            @map("actor_id")
+  type        ActivityEventType
+  description String
+  metadata    Json?
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  workItem WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  actor    User     @relation(fields: [actorId], references: [id])
+
+  @@index([workItemId, createdAt])
+  @@map("activity_events")
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  workItemId String   @map("work_item_id")
+  authorId   String   @map("author_id")
+  content    String
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  workItem WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  author   User     @relation(fields: [authorId], references: [id])
+
+  @@index([workItemId])
+  @@map("comments")
+}
+
+model IdempotencyKey {
+  id           String   @id @default(cuid())
+  key          String
+  userId       String   @map("user_id")
+  requestHash  String   @map("request_hash")
+  statusCode   Int      @default(0) @map("status_code")
+  responseBody Json     @default("{}") @map("response_body")
+  createdAt    DateTime @default(now()) @map("created_at")
+  expiresAt    DateTime @map("expires_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([key, userId])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}
+
+model OutboxJob {
+  id            String    @id @default(cuid())
+  workItemId    String?   @map("work_item_id")
+  type          String
+  payload       Json
+  status        JobStatus @default(PENDING)
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(5) @map("max_attempts")
+  lastAttemptAt DateTime? @map("last_attempt_at")
+  processAfter  DateTime  @default(now()) @map("process_after")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  completedAt   DateTime? @map("completed_at")
+
+  workItem WorkItem? @relation(fields: [workItemId], references: [id], onDelete: SetNull)
+
+  @@index([status, processAfter])
+  @@index([status, attempts])
+  @@map("outbox_jobs")
+}
