@@ -9,6 +9,50 @@ authorization, transactional data integrity, and cursor-based pagination.
 
 ---
 
+## Screenshots
+
+### Dashboard
+The operations dashboard shows stat cards, assigned items, urgent unassigned items, and awaiting-approval panels — all scoped to the logged-in user's teams.
+
+![Dashboard](screenshot/dashboard.png)
+
+---
+
+### Work Items List
+Filterable, searchable, cursor-paginated table with status/priority badges, short alphanumeric IDs, and quick-filter tabs.
+
+![Work Items](screenshot/items.png)
+
+---
+
+### Work Item Detail
+Split-panel detail view with inline editing, colorful workflow step tracker, atomic claim button, and activity timeline.
+
+![Work Item Detail](screenshot/ticket.png)
+
+---
+
+### Teams
+Team membership cards showing all members, roles, and an expandable profile sheet.
+
+![Teams](screenshot/teams.png)
+
+---
+
+### Team Member Profile
+Slide-in profile sheet showing a member's active assigned items, stat summary, and recent activity.
+
+![Team Member Profile](screenshot/team_profile.png)
+
+---
+
+### Activity Log
+Chronological event log with semantic color-coded event-type chips, grouped by date.
+
+![Activity Log](screenshot/activity.png)
+
+---
+
 ## Quick Start
 
 ### Prerequisites
